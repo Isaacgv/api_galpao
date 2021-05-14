@@ -38,7 +38,7 @@ def detect_products(img_galpao, imgs_products, marcas):
         to_compare = []
         for imgs in imgs_products:
             for img in imgs:
-                to_compare.extend(galpao_products_compare(img))
+                to_compare.extend(galpao_products_compare(img, True))
 
     images_list.extend(to_compare)
 
@@ -105,7 +105,7 @@ def detect_products(img_galpao, imgs_products, marcas):
     return results
 
 
-def galpao_products_compare(img_galpao):
+def galpao_products_compare(img_galpao, select_img=False):
     im_bytes = base64.b64decode(img_galpao)
     im_arr = np.frombuffer(im_bytes, dtype=np.uint8)  # im_arr is one-dim Numpy array
     img0s = cv2.imdecode(im_arr, flags=cv2.IMREAD_COLOR)
@@ -126,6 +126,7 @@ def galpao_products_compare(img_galpao):
     pred = non_max_suppression(pred, 0.45, 0.3, classes=None, agnostic=True)
 
     images_detected = []
+    images_size = []
 
     for i, det in enumerate(pred):  # detections per image
     
@@ -144,9 +145,20 @@ def galpao_products_compare(img_galpao):
                 save_dir = "s"
                 crp_image = save_one_box(xyxy, img0s, file='', BGR=True, return_image=True)
                 crp_image = cv2.resize(crp_image, (160,160))/255.
+                
+
+                if select_img:
+                    w, h, _ = crp_image.shape
+                    images_size.append(w*h)
+                
                 crp_image = np.expand_dims(crp_image, axis=0)
+
                 images_detected.append([crp_image])
                 n_+= 1
+
+        if select_img:
+            area_max = max(images_size)
+            return [images_detected[images_size.index(area_max)]]
 
     return images_detected
 
